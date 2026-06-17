@@ -15,4 +15,3 @@ if __name__ == "__main__":
     result = two_sum(nums, target)
     print(f"数组: {nums}, 目标值: {target}")
     print(f"两数之和结果(数值): {result}")
-    111
