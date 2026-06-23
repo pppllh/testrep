@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📝 待办事项</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 500px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 30px;
+    color: white;
+    text-align: center;
+  }
+
+  .header h1 { font-size: 28px; margin-bottom: 6px; }
+  .header .date { font-size: 14px; opacity: 0.85; }
+  .header .stats { margin-top: 16px; font-size: 14px; }
+  .header .stats span { font-weight: bold; }
+
+  .add-section {
+    display: flex;
+    padding: 20px;
+    gap: 10px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .add-section input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 15px;
+    outline: none;
+    transition: border 0.2s;
+  }
+
+  .add-section input:focus { border-color: #667eea; }
+
+  .add-section button {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+
+  .add-section button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+  }
+
+  .add-section button:active { transform: translateY(0); }
+
+  .toolbar {
+    display: flex;
+    padding: 12px 20px;
+    gap: 8px;
+    border-bottom: 1px solid #eee;
+    flex-wrap: wrap;
+  }
+
+  .toolbar button {
+    padding: 6px 14px;
+    border: 1.5px solid #ddd;
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+
+  .toolbar button.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+  }
+
+  .task-list {
+    list-style: none;
+    max-height: 450px;
+    overflow-y: auto;
+  }
+
+  .task-list li {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    gap: 12px;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background 0.2s;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  .task-list li:hover { background: #fafafa; }
+
+  .task-list li.completed .text { text-decoration: line-through; color: #bbb; }
+
+  .task-list li .checkbox {
+    width: 22px; height: 22px;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .task-list li .checkbox:hover { border-color: #667eea; }
+  .task-list li.completed .checkbox {
+    background: #667eea;
+    border-color: #667eea;
+  }
+
+  .task-list li.completed .checkbox::after {
+    content: '✓';
+    color: white;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  .task-list li .text {
+    flex: 1;
+    font-size: 15px;
+    word-break: break-word;
+  }
+
+  .task-list li .time {
+    font-size: 11px;
+    color: #aaa;
+    white-space: nowrap;
+  }
+
+  .task-list li .edit-input {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 15px;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    outline: none;
+  }
+
+  .task-list li .actions { display: flex; gap: 4px; }
+
+  .task-list li .actions button {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s;
+  }
+
+  .btn-edit { background: #e3f2fd; color: #1976d2; }
+  .btn-edit:hover { background: #bbdefb; }
+  .btn-delete { background: #ffebee; color: #c62828; }
+  .btn-delete:hover { background: #ffcdd2; }
+  .btn-save { background: #e8f5e9; color: #2e7d32; }
+  .btn-save:hover { background: #c8e6c9; }
+  .btn-cancel { background: #f5f5f5; color: #666; }
+  .btn-cancel:hover { background: #e0e0e0; }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #ccc;
+  }
+
+  .empty .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty p { font-size: 15px; }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-top: 1px solid #eee;
+    font-size: 13px;
+    color: #999;
+  }
+
+  .footer button {
+    background: none;
+    border: none;
+    color: #c62828;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .footer button:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>📝 待办事项</h1>
+    <div class="date" id="date"></div>
+    <div class="stats">
+      完成 <span id="doneCount">0</span> / <span id="totalCount">0</span>
+    </div>
+  </div>
+
+  <div class="add-section">
+    <input id="taskInput" type="text" placeholder="输入新任务..." maxlength="200">
+    <button onclick="addTask()">➕ 添加</button>
+  </div>
+
+  <div class="toolbar">
+    <button class="active" data-filter="all" onclick="setFilter('all', this)">全部</button>
+    <button data-filter="active" onclick="setFilter('active', this)">进行中</button>
+    <button data-filter="completed" onclick="setFilter('completed', this)">已完成</button>
+  </div>
+
+  <ul class="task-list" id="taskList"></ul>
+
+  <div class="empty" id="emptyState">
+    <div class="icon">📋</div>
+    <p>暂无任务，添加一个吧 ✨</p>
+  </div>
+
+  <div class="footer">
+    <span id="leftCount">0 项待完成</span>
+    <button onclick="clearCompleted()">🗑 清除已完成</button>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'todo_data';
+  let tasks = [];
+  let filter = 'all';
+  let editingId = null;
+
+  // ─── 加载数据 ───
+  function load() {
+    try { tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { tasks = []; }
+    editingId = null;
+  }
+
+  // ─── 保存数据 ───
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+
+  // ─── 添加任务 ───
+  function addTask() {
+    const input = document.getElementById('taskInput');
+    const text = input.value.trim();
+    if (!text) return;
+    tasks.unshift({
+      id: Date.now(),
+      text,
+      completed: false,
+      createdAt: new Date().toLocaleString('zh-CN')
+    });
+    save();
+    input.value = '';
+    input.focus();
+    render();
+  }
+
+  // ─── 切换完成 ───
+  function toggle(id) {
+    if (editingId === id) return;
+    const task = tasks.find(t => t.id === id);
+    if (task) { task.completed = !task.completed; save(); render(); }
+  }
+
+  // ─── 删除任务 ───
+  function deleteTask(id) {
+    if (editingId === id) editingId = null;
+    tasks = tasks.filter(t => t.id !== id);
+    save();
+    render();
+  }
+
+  // ─── 进入编辑 ───
+  function startEdit(id) {
+    if (editingId !== null) cancelEdit();
+    editingId = id;
+    render();
+  }
+
+  // ─── 保存编辑 ───
+  function saveEdit(id) {
+    const input = document.getElementById('editInput-' + id);
+    if (!input) return;
+    const text = input.value.trim();
+    if (text) {
+      const task = tasks.find(t => t.id === id);
+      if (task) { task.text = text; save(); }
+    }
+    editingId = null;
+    render();
+  }
+
+  // ─── 取消编辑 ───
+  function cancelEdit() { editingId = null; render(); }
+
+  // ─── 清除已完成 ───
+  function clearCompleted() {
+    const count = tasks.filter(t => t.completed).length;
+    if (count === 0) return;
+    if (!confirm(`确定要删除 ${count} 个已完成任务吗？`)) return;
+    tasks = tasks.filter(t => !t.completed);
+    if (editingId && !tasks.find(t => t.id === editingId)) editingId = null;
+    save();
+    render();
+  }
+
+  // ─── 设置筛选 ───
+  function setFilter(f, btn) {
+    filter = f;
+    document.querySelectorAll('.toolbar button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  // ─── 键盘提交 ───
+  document.addEventListener('DOMContentLoaded', () => {
+    load();
+    updateDate();
+    render();
+    document.getElementById('taskInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTask();
+    });
+  });
+
+  function updateDate() {
+    document.getElementById('date').textContent = new Date().toLocaleDateString('zh-CN', {
+      year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+    });
+  }
+
+  // ─── 渲染 ───
+  function render() {
+    const list = document.getElementById('taskList');
+    const empty = document.getElementById('emptyState');
+
+    let filtered = tasks;
+    if (filter === 'active') filtered = tasks.filter(t => !t.completed);
+    if (filter === 'completed') filtered = tasks.filter(t => t.completed);
+
+    document.getElementById('doneCount').textContent = tasks.filter(t => t.completed).length;
+    document.getElementById('totalCount').textContent = tasks.length;
+    document.getElementById('leftCount').textContent = tasks.filter(t => !t.completed).length + ' 项待完成';
+
+    if (filtered.length === 0) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+    } else {
+      empty.style.display = 'none';
+      list.innerHTML = filtered.map(t => {
+        const isEditing = editingId === t.id;
+        return `
+          <li class="${t.completed ? 'completed' : ''}">
+            <div class="checkbox" onclick="toggle(${t.id})"></div>
+            ${isEditing
+              ? `<input class="edit-input" id="editInput-${t.id}" value="${esc(t.text)}" onkeydown="if(event.key==='Enter') saveEdit(${t.id})">`
+              : `<span class="text">${esc(t.text)}</span>`
+            }
+            <span class="time">${t.createdAt}</span>
+            <div class="actions">
+              ${isEditing ? `
+                <button class="btn-save" onclick="saveEdit(${t.id})">保存</button>
+                <button class="btn-cancel" onclick="cancelEdit()">取消</button>
+              ` : `
+                <button class="btn-edit" onclick="startEdit(${t.id})">编辑</button>
+                <button class="btn-delete" onclick="deleteTask(${t.id})">删除</button>
+              `}
+            </div>
+          </li>`;
+      }).join('');
+    }
+  }
+
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+
+</body>
+</html>
